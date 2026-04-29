@@ -1,17 +1,9 @@
 # test-fullstack-playsparts
 
-Минимум для быстрой проверки тестового задания.
-
 ## Тестовые пользователи
 
 - `user@test.com / password123`
 - `admin@test.com / password123`
-
-## Что должно быть проверено
-
-- Frontend (Nuxt3): `login`, `home`, `internal`, `admin`.
-- API (Nest + Prisma): `login`, `logout`, `check-access`, `admin-data`.
-- Ролевой доступ: `user` не должен получать admin-only данные, `admin` должен.
 
 ## Быстрый запуск
 
