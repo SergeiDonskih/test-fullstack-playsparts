@@ -13,7 +13,7 @@ docker compose up -d
 cd test-fullstack-playsparts/apps/backend
 npm install
 npm run prisma:generate
-npm run prisma:migrate:dev -- --name init
+npm run prisma:migrate:dev -- --name create_users_table
 npm run prisma:seed
 npm run start:dev
 
