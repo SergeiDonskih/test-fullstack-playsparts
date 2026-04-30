@@ -55,6 +55,6 @@ async function bootstrap(): Promise<void> {
 
 void bootstrap().catch((err: unknown) => {
   const logger = new Logger('ServerBootstrap');
-  logger.error('Gateway bootstrap failed', err);
+  logger.error('Server bootstrap failed', err);
   process.exit(1);
 });
