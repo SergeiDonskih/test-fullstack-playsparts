@@ -2,7 +2,11 @@ import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { EnvKey, Environment } from './core/constants';
+import { registerProcessErrorHandlers } from './config/process-error-handlers';
 import { AppModule } from './app.module';
+
+registerProcessErrorHandlers();
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -24,14 +28,17 @@ async function bootstrap(): Promise<void> {
 
   app.enableCors({
     origin: configService.get<string>(
-      'FRONTEND_ORIGIN',
+      EnvKey.FRONTEND_ORIGIN,
       'http://localhost:3000',
     ),
     credentials: true,
   });
 
-  const nodeEnv = configService.get<string>('NODE_ENV', 'development');
-  if (nodeEnv !== 'production') {
+  const nodeEnv = configService.get<Environment>(
+    EnvKey.NODE_ENV,
+    Environment.Development,
+  );
+  if (nodeEnv !== Environment.Production) {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('Fullstack Test API')
       .setDescription('API для тестового задания: auth/access/admin')
@@ -42,7 +49,7 @@ async function bootstrap(): Promise<void> {
     SwaggerModule.setup('docs', app, swaggerDocument);
   }
 
-  const port = configService.get<number>('BACKEND_PORT', 3001);
+  const port = configService.get<number>(EnvKey.BACKEND_PORT, 3001);
   await app.listen(port);
 }
 

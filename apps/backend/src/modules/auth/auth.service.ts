@@ -1,18 +1,17 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import type { StringValue } from 'ms';
+import { EnvKey, Role, Table } from '@/core/constants';
+import type { AuthTokensWithRefresh, IAuthService } from '@/core/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 
-interface AuthTokensResponse extends AuthResponseDto {
-  refreshToken: string;
-}
-
 @Injectable()
-export class AuthService {
+export class AuthService implements IAuthService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly jwtService: JwtService,
@@ -26,7 +25,7 @@ export class AuthService {
   }): Promise<string> {
     return this.jwtService.signAsync(payload, {
       expiresIn: this.configService.get<string>(
-        'JWT_EXPIRES_IN',
+        EnvKey.JWT_EXPIRES_IN,
         '15m',
       ) as StringValue,
     });
@@ -39,23 +38,22 @@ export class AuthService {
   }): Promise<string> {
     return this.jwtService.signAsync(payload, {
       expiresIn: this.configService.get<string>(
-        'JWT_REFRESH_EXPIRES_IN',
+        EnvKey.JWT_REFRESH_EXPIRES_IN,
         '7d',
       ) as StringValue,
     });
   }
 
-  async login(dto: LoginDto): Promise<AuthTokensResponse> {
-    const users = await this.prismaService.$queryRaw<
+  async login(dto: LoginDto): Promise<AuthTokensWithRefresh> {
+    const [user] = await this.prismaService.$queryRaw<
       Array<{
         id: number;
         email: string;
         password_hash: string;
-        role: 'user' | 'admin';
+        role: Role;
       }>
-    >`SELECT id, email, password_hash, role FROM app_users WHERE email = ${dto.email} LIMIT 1`;
+    >`SELECT id, email, password_hash, role FROM ${Prisma.raw(Table.AppUser)} WHERE email = ${dto.email} LIMIT 1`;
 
-    const user = users[0];
     if (!user) {
       throw new UnauthorizedException('Неверный email или пароль');
     }
@@ -77,7 +75,7 @@ export class AuthService {
     const refreshToken = await this.signRefreshToken(payload);
 
     await this.prismaService.$executeRaw`
-      UPDATE app_users
+      UPDATE ${Prisma.raw(Table.AppUser)}
       SET last_login_at = NOW()
       WHERE id = ${user.id}
     `;
@@ -97,9 +95,12 @@ export class AuthService {
     const payload = await this.jwtService.verifyAsync<{
       sub: number;
       email: string;
-      role: 'user' | 'admin';
+      role: Role;
     }>(refreshToken, {
-      secret: this.configService.get<string>('JWT_SECRET', 'fallback_secret'),
+      secret: this.configService.get<string>(
+        EnvKey.JWT_SECRET,
+        'fallback_secret',
+      ),
     });
 
     const accessToken = await this.signAccessToken({

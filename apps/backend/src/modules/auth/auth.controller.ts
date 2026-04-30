@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Inject,
   Post,
   Req,
   Res,
@@ -10,7 +11,15 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
-import { AuthService } from './auth.service';
+import {
+  CookieName,
+  Environment,
+  EnvKey,
+  RefreshCookieMaxAgeMs,
+  ServiceToken,
+  getAuthApiBasePath,
+} from '@/core/constants';
+import type { IAuthService } from '@/core/interfaces';
 import { Public } from '@/framework/decorators/public.decorator';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
@@ -28,34 +37,39 @@ interface LogoutResponse {
 @Controller({ path: 'auth', version: '1' })
 export class AuthController {
   constructor(
-    private readonly authService: AuthService,
+    @Inject(ServiceToken.AuthService)
+    private readonly authService: IAuthService,
     private readonly configService: ConfigService,
   ) {}
 
   private setRefreshCookie(res: Response, refreshToken: string): void {
     const isProduction =
-      this.configService.get<string>('NODE_ENV', 'development') ===
-      'production';
+      this.configService.get<Environment>(
+        EnvKey.NODE_ENV,
+        Environment.Development,
+      ) === Environment.Production;
 
-    res.cookie('refresh_token', refreshToken, {
+    res.cookie(CookieName.RefreshToken, refreshToken, {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProduction,
-      path: '/api/v1/auth',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: getAuthApiBasePath(),
+      maxAge: RefreshCookieMaxAgeMs,
     });
   }
 
   private clearRefreshCookie(res: Response): void {
     const isProduction =
-      this.configService.get<string>('NODE_ENV', 'development') ===
-      'production';
+      this.configService.get<Environment>(
+        EnvKey.NODE_ENV,
+        Environment.Development,
+      ) === Environment.Production;
 
-    res.clearCookie('refresh_token', {
+    res.clearCookie(CookieName.RefreshToken, {
       httpOnly: true,
       sameSite: 'lax',
       secure: isProduction,
-      path: '/api/v1/auth',
+      path: getAuthApiBasePath(),
     });
   }
 
@@ -82,7 +96,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh access token by HttpOnly refresh cookie' })
   async refresh(@Req() req: Request): Promise<AuthResponseDto> {
     const cookieHeader = req.headers.cookie ?? '';
-    const match = cookieHeader.match(/(?:^|; )refresh_token=([^;]+)/);
+    const match = cookieHeader.match(
+      new RegExp(`(?:^|; )${CookieName.RefreshToken}=([^;]+)`),
+    );
     const refreshToken = match ? decodeURIComponent(match[1]) : '';
 
     if (!refreshToken) {

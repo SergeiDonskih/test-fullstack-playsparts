@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import { ServiceToken } from '@/core/constants';
 import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -11,7 +11,7 @@ describe('AuthController', () => {
       controllers: [AuthController],
       providers: [
         {
-          provide: AuthService,
+          provide: ServiceToken.AuthService,
           useValue: {
             login: jest.fn(),
             refresh: jest.fn(),

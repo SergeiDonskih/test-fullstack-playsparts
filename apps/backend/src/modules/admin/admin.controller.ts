@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Role } from '@/core/constants';
 import { Roles } from '@/framework/decorators/roles.decorator';
 import { AdminDataResponseDto } from './dto/admin-data-response.dto';
 
@@ -8,7 +9,7 @@ import { AdminDataResponseDto } from './dto/admin-data-response.dto';
 @Controller({ path: 'admin', version: '1' })
 export class AdminController {
   @Get('data')
-  @Roles('admin')
+  @Roles(Role.Admin)
   @ApiOperation({ summary: 'Admin-only data endpoint' })
   getAdminData(): AdminDataResponseDto {
     return {

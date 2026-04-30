@@ -7,6 +7,7 @@ import {
   Min,
   validateSync,
 } from 'class-validator';
+import { Environment } from '@/core/constants';
 
 class EnvironmentVariables {
   @IsString()
@@ -31,9 +32,9 @@ class EnvironmentVariables {
   BACKEND_PORT!: number;
 
   @IsString()
-  @IsIn(['development', 'production'])
+  @IsIn([Environment.Development, Environment.Production])
   @IsOptional()
-  NODE_ENV?: 'development' | 'production';
+  NODE_ENV?: Environment;
 }
 
 export function validateEnv(
