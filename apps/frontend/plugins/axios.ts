@@ -8,12 +8,6 @@ declare module '#app' {
   }
 }
 
-declare module 'vue' {
-  interface ComponentCustomProperties {
-    $api: AxiosInstance;
-  }
-}
-
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig();
   const accessToken = useState<string | null>('auth_access_token', () => null);
